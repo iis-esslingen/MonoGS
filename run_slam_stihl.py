@@ -199,12 +199,24 @@ class SLAM:
     def run(self):
         pass
 
+SEQUENCES = {
+    "kwald/drosselweg/flaeche1": [
+        "2023-08-18", "2023-09-15", "2024-01-13", "2024-04-11", "2024-05-29_1", "2024-05-29_2", "2024-05-29_3", "2024-05-29_4"],
+    # "kwald/drosselweg/flaeche2": [
+    #     "2023-08-18", "2023-12-21", "2024-01-13", "2024-04-11", "2024-05-29_1", "2024-05-30_1", "2024-05-30_2"],
+    # "esslingen/hse_dach": [
+    #     "2023-07-20", "2023-11-07", "2024-01-27", "2024-04-14"],
+    # "esslingen/hse_hinterhof": [
+    #     "2023-07-31", "2023-11-07", "2024-04-14", "2024-05-08", "2024-05-13_1", "2024-05-13_2", "2024-05-24_2"],
+    # "esslingen/hse_sporthalle": [
+    #     "2023-09-11", "2023-11-23", "2024-02-19", "2024-04-14", "2024-05-07", "2024-05-08_1", "2024-05-08_2", "2024-05-24_1"],
+}
 
 if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
-    parser.add_argument("--datapath", type=Path)
-    parser.add_argument("--outputpath", type=Path)
+    parser.add_argument("--base_data_path", type=Path)
+    parser.add_argument("--base_output_path", type=Path)
     parser.add_argument("--config", type=str)
     parser.add_argument("--eval", action="store_true")
 
@@ -220,46 +232,59 @@ if __name__ == "__main__":
 
     print(config)
 
-    config["Dataset"]["dataset_path"] = args.datapath
-    config["Results"]["save_dir"] = args.outputpath
+    errors = dict()
 
-    if args.eval:
-        Log("Running MonoGS in Evaluation Mode")
-        Log("Following config will be overriden")
-        Log("\tsave_results=True")
-        config["Results"]["save_results"] = True
-        Log("\tuse_gui=False")
-        config["Results"]["use_gui"] = False
-        Log("\teval_rendering=True")
-        config["Results"]["eval_rendering"] = True
-        Log("\tuse_wandb=True")
-        config["Results"]["use_wandb"] = True
+    for location, dates in SEQUENCES.items():
+        for date in dates:
+            print(f"Running Location: {location} - Date: {date}")
 
-    if config["Results"]["save_results"]:
-        # mkdir_p(config["Results"]["save_dir"])
-        current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        # path = config["Dataset"]["dataset_path"].split("/")
-        save_dir = config["Results"]["save_dir"] 
-        tmp = args.config
-        tmp = tmp.split(".")[0]
-        # config["Results"]["save_dir"] = save_dir
-        mkdir_p(save_dir)
-        with open(os.path.join(save_dir, "config.yml"), "w") as file:
-            documents = yaml.dump(config, file)
-        Log("saving results in " + str(save_dir))
-        run = wandb.init(
-            project="MonoGS",
-            name=f"{tmp}_{current_datetime}",
-            config=config,
-            mode=None if config["Results"]["use_wandb"] else "disabled",
-        )
-        wandb.define_metric("frame_idx")
-        wandb.define_metric("ate*", step_metric="frame_idx")
+            config["Dataset"]["dataset_path"] = os.path.join(args.base_data_path, location, date, "tum", "d435i")
+            config["Results"]["save_dir"] = os.path.join(args.base_output_path, location, date, "d435i")
 
-    slam = SLAM(config, save_dir=save_dir)
+            if args.eval:
+                Log("Running MonoGS in Evaluation Mode")
+                Log("Following config will be overriden")
+                Log("\tsave_results=True")
+                config["Results"]["save_results"] = True
+                Log("\tuse_gui=False")
+                config["Results"]["use_gui"] = False
+                Log("\teval_rendering=True")
+                config["Results"]["eval_rendering"] = True
+                Log("\tuse_wandb=True")
+                config["Results"]["use_wandb"] = True
 
-    slam.run()
-    wandb.finish()
+            if config["Results"]["save_results"]:
+                # mkdir_p(config["Results"]["save_dir"])
+                current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+                # path = config["Dataset"]["dataset_path"].split("/")
+                save_dir = config["Results"]["save_dir"] 
+                tmp = args.config
+                tmp = tmp.split(".")[0]
+                # config["Results"]["save_dir"] = save_dir
+                mkdir_p(save_dir)
+                with open(os.path.join(save_dir, "config.yml"), "w") as file:
+                    documents = yaml.dump(config, file)
+                Log("saving results in " + str(save_dir))
+                run = wandb.init(
+                    project="MonoGS",
+                    name=f"{tmp}_{current_datetime}",
+                    config=config,
+                    mode=None if config["Results"]["use_wandb"] else "disabled",
+                )
+                wandb.define_metric("frame_idx")
+                wandb.define_metric("ate*", step_metric="frame_idx")
 
-    # All done
-    Log("Done.")
+            try:
+
+                slam = SLAM(config, save_dir=save_dir)
+
+                slam.run()
+                wandb.finish()
+            except Exception as e:
+                errors[f"{location} - {date}"] = e
+
+            # All done
+            Log("Done.")
+
+    for sequence, error in errors.items():
+        print(f"Sequence: {sequence} - error {error}")
