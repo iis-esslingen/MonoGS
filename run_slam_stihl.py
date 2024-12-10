@@ -120,6 +120,11 @@ class SLAM:
         Log("Total time", start.elapsed_time(end) * 0.001, tag="Eval")
         Log("Total FPS", N_frames / (start.elapsed_time(end) * 0.001), tag="Eval")
 
+        with open(os.path.join(save_dir, "fps.txt"), "w") as file:
+            file.write(f"FPS: {FPS}")
+
+        self.eval_rendering = True
+
         if self.eval_rendering:
             self.gaussians = self.frontend.gaussians
             kf_indices = self.frontend.kf_indices
@@ -199,18 +204,16 @@ class SLAM:
     def run(self):
         pass
 
-SEQUENCES = {
-    "kwald/drosselweg/flaeche1": [
-        "2023-08-18", "2023-09-15", "2024-01-13", "2024-04-11", "2024-05-29_1", "2024-05-29_2", "2024-05-29_3", "2024-05-29_4"],
-    # "kwald/drosselweg/flaeche2": [
-    #     "2023-08-18", "2023-12-21", "2024-01-13", "2024-04-11", "2024-05-29_1", "2024-05-30_1", "2024-05-30_2"],
-    # "esslingen/hse_dach": [
-    #     "2023-07-20", "2023-11-07", "2024-01-27", "2024-04-14"],
-    # "esslingen/hse_hinterhof": [
-    #     "2023-07-31", "2023-11-07", "2024-04-14", "2024-05-08", "2024-05-13_1", "2024-05-13_2", "2024-05-24_2"],
-    # "esslingen/hse_sporthalle": [
-    #     "2023-09-11", "2023-11-23", "2024-02-19", "2024-04-14", "2024-05-07", "2024-05-08_1", "2024-05-08_2", "2024-05-24_1"],
-}
+SEQUENCES = [
+    # "kwald/drosselweg/flaeche1/2023-08-18",
+    # "kwald/drosselweg/flaeche1/2023-09-15",
+    # "kwald/drosselweg/flaeche1/2024-01-13",
+    # "kwald/drosselweg/flaeche1/2024-04-11",
+    # "kwald/drosselweg/flaeche1/2024-05-29_1",
+    # "kwald/drosselweg/flaeche1/2024-05-29_2",
+    # "kwald/drosselweg/flaeche1/2024-05-29_3",
+    "kwald/drosselweg/flaeche1/2024-05-29_4"
+]
 
 if __name__ == "__main__":
     # Set up command line argument parser
@@ -222,8 +225,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args(sys.argv[1:])
 
-    mp.set_start_method("spawn")
-
     with open(args.config, "r") as yml:
         config = yaml.safe_load(yml)
 
@@ -234,57 +235,64 @@ if __name__ == "__main__":
 
     errors = dict()
 
-    for location, dates in SEQUENCES.items():
-        for date in dates:
-            print(f"Running Location: {location} - Date: {date}")
+    sequence = SEQUENCES[int(os.environ.get("SCENE_NUM"))]
+    # sequence = SEQUENCES[0]
 
-            config["Dataset"]["dataset_path"] = os.path.join(args.base_data_path, location, date, "tum", "d435i")
-            config["Results"]["save_dir"] = os.path.join(args.base_output_path, location, date, "d435i")
+    print(f"Running ")
 
-            if args.eval:
-                Log("Running MonoGS in Evaluation Mode")
-                Log("Following config will be overriden")
-                Log("\tsave_results=True")
-                config["Results"]["save_results"] = True
-                Log("\tuse_gui=False")
-                config["Results"]["use_gui"] = False
-                Log("\teval_rendering=True")
-                config["Results"]["eval_rendering"] = True
-                Log("\tuse_wandb=True")
-                config["Results"]["use_wandb"] = True
+    try:
+        mp.set_start_method('spawn')
+    except RuntimeError:
+        pass
 
-            if config["Results"]["save_results"]:
-                # mkdir_p(config["Results"]["save_dir"])
-                current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-                # path = config["Dataset"]["dataset_path"].split("/")
-                save_dir = config["Results"]["save_dir"] 
-                tmp = args.config
-                tmp = tmp.split(".")[0]
-                # config["Results"]["save_dir"] = save_dir
-                mkdir_p(save_dir)
-                with open(os.path.join(save_dir, "config.yml"), "w") as file:
-                    documents = yaml.dump(config, file)
-                Log("saving results in " + str(save_dir))
-                run = wandb.init(
-                    project="MonoGS",
-                    name=f"{tmp}_{current_datetime}",
-                    config=config,
-                    mode=None if config["Results"]["use_wandb"] else "disabled",
-                )
-                wandb.define_metric("frame_idx")
-                wandb.define_metric("ate*", step_metric="frame_idx")
+    config["Dataset"]["dataset_path"] = os.path.join(args.base_data_path, sequence, "tum", "d435i")
+    config["Results"]["save_dir"] = os.path.join(args.base_output_path, sequence, "d435i")
 
-            try:
+    if args.eval:
+        Log("Running MonoGS in Evaluation Mode")
+        Log("Following config will be overriden")
+        Log("\tsave_results=True")
+        config["Results"]["save_results"] = True
+        Log("\tuse_gui=False")
+        config["Results"]["use_gui"] = False
+        Log("\teval_rendering=True")
+        config["Results"]["eval_rendering"] = True
+        Log("\tuse_wandb=True")
+        config["Results"]["use_wandb"] = True
 
-                slam = SLAM(config, save_dir=save_dir)
+    if config["Results"]["save_results"]:
+        # mkdir_p(config["Results"]["save_dir"])
+        current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        # path = config["Dataset"]["dataset_path"].split("/")
+        save_dir = config["Results"]["save_dir"] 
+        tmp = args.config
+        tmp = tmp.split(".")[0]
+        # config["Results"]["save_dir"] = save_dir
+        mkdir_p(save_dir)
+        with open(os.path.join(save_dir, "config.yml"), "w") as file:
+            documents = yaml.dump(config, file)
+        Log("saving results in " + str(save_dir))
+        run = wandb.init(
+            project="MonoGS",
+            name=f"{tmp}_{current_datetime}",
+            config=config,
+            mode=None if config["Results"]["use_wandb"] else "disabled",
+        )
+        # wandb.define_metric("frame_idx")
+        # wandb.define_metric("ate*", step_metric="frame_idx")
 
-                slam.run()
-                wandb.finish()
-            except Exception as e:
-                errors[f"{location} - {date}"] = e
+    try:
+        slam = SLAM(config, save_dir=save_dir)
 
-            # All done
-            Log("Done.")
+        slam.run()
+        # wandb.finish()
+    except Exception as e:
+        print(f"Error: {e}")
+        # errors[f"{location} - {date}"] = e
+    finally:
+        torch.cuda.empty_cache()
+        # All done
+        Log("Done.")
 
     for sequence, error in errors.items():
         print(f"Sequence: {sequence} - error {error}")
