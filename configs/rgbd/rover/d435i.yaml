@@ -1,7 +1,7 @@
-inherit_from: "configs/mono/stihl/base_config.yaml"
+inherit_from: "configs/rgbd/rover/base_config.yaml"
 
 Dataset:
-  dataset_path: "/home/doubletower/data/stihl/kwald1"
+  dataset_path: "/home/doubletower/data/rover/kwald1"
   Calibration:
     fx: 596.1950425915236
     fy: 593.1411835433107
@@ -14,4 +14,5 @@ Dataset:
     k3: 0.0
     width: 640
     height: 480
+    depth_scale: 1000.0
     distorted: True

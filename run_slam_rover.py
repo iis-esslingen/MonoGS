@@ -205,13 +205,13 @@ class SLAM:
         pass
 
 SEQUENCES = [
-    # "kwald/drosselweg/flaeche1/2023-08-18",
-    # "kwald/drosselweg/flaeche1/2023-09-15",
-    # "kwald/drosselweg/flaeche1/2024-01-13",
-    # "kwald/drosselweg/flaeche1/2024-04-11",
-    # "kwald/drosselweg/flaeche1/2024-05-29_1",
-    # "kwald/drosselweg/flaeche1/2024-05-29_2",
-    # "kwald/drosselweg/flaeche1/2024-05-29_3",
+    "kwald/drosselweg/flaeche1/2023-08-18",
+    "kwald/drosselweg/flaeche1/2023-09-15",
+    "kwald/drosselweg/flaeche1/2024-01-13",
+    "kwald/drosselweg/flaeche1/2024-04-11",
+    "kwald/drosselweg/flaeche1/2024-05-29_1",
+    "kwald/drosselweg/flaeche1/2024-05-29_2",
+    "kwald/drosselweg/flaeche1/2024-05-29_3",
     "kwald/drosselweg/flaeche1/2024-05-29_4"
 ]
 
@@ -236,7 +236,6 @@ if __name__ == "__main__":
     errors = dict()
 
     sequence = SEQUENCES[int(os.environ.get("SCENE_NUM"))]
-    # sequence = SEQUENCES[0]
 
     print(f"Running ")
 
