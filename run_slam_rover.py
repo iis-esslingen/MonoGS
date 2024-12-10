@@ -120,6 +120,11 @@ class SLAM:
         Log("Total time", start.elapsed_time(end) * 0.001, tag="Eval")
         Log("Total FPS", N_frames / (start.elapsed_time(end) * 0.001), tag="Eval")
 
+        with open(os.path.join(save_dir, "fps.txt"), "w") as file:
+            file.write(f"FPS: {FPS}")
+
+        self.eval_rendering = True
+
         if self.eval_rendering:
             self.gaussians = self.frontend.gaussians
             kf_indices = self.frontend.kf_indices
@@ -199,18 +204,26 @@ class SLAM:
     def run(self):
         pass
 
+SEQUENCES = [
+    "kwald/drosselweg/flaeche1/2023-08-18",
+    "kwald/drosselweg/flaeche1/2023-09-15",
+    "kwald/drosselweg/flaeche1/2024-01-13",
+    "kwald/drosselweg/flaeche1/2024-04-11",
+    "kwald/drosselweg/flaeche1/2024-05-29_1",
+    "kwald/drosselweg/flaeche1/2024-05-29_2",
+    "kwald/drosselweg/flaeche1/2024-05-29_3",
+    "kwald/drosselweg/flaeche1/2024-05-29_4"
+]
 
 if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
-    parser.add_argument("--datapath", type=Path)
-    parser.add_argument("--outputpath", type=Path)
+    parser.add_argument("--base_data_path", type=Path)
+    parser.add_argument("--base_output_path", type=Path)
     parser.add_argument("--config", type=str)
     parser.add_argument("--eval", action="store_true")
 
     args = parser.parse_args(sys.argv[1:])
-
-    mp.set_start_method("spawn")
 
     with open(args.config, "r") as yml:
         config = yaml.safe_load(yml)
@@ -220,8 +233,19 @@ if __name__ == "__main__":
 
     print(config)
 
-    config["Dataset"]["dataset_path"] = args.datapath
-    config["Results"]["save_dir"] = args.outputpath
+    errors = dict()
+
+    sequence = SEQUENCES[int(os.environ.get("SCENE_NUM"))]
+
+    print(f"Running ")
+
+    try:
+        mp.set_start_method('spawn')
+    except RuntimeError:
+        pass
+
+    config["Dataset"]["dataset_path"] = os.path.join(args.base_data_path, sequence, "tum", "d435i")
+    config["Results"]["save_dir"] = os.path.join(args.base_output_path, sequence, "d435i")
 
     if args.eval:
         Log("Running MonoGS in Evaluation Mode")
@@ -253,13 +277,21 @@ if __name__ == "__main__":
             config=config,
             mode=None if config["Results"]["use_wandb"] else "disabled",
         )
-        wandb.define_metric("frame_idx")
-        wandb.define_metric("ate*", step_metric="frame_idx")
+        # wandb.define_metric("frame_idx")
+        # wandb.define_metric("ate*", step_metric="frame_idx")
 
-    slam = SLAM(config, save_dir=save_dir)
+    try:
+        slam = SLAM(config, save_dir=save_dir)
 
-    slam.run()
-    wandb.finish()
+        slam.run()
+        # wandb.finish()
+    except Exception as e:
+        print(f"Error: {e}")
+        # errors[f"{location} - {date}"] = e
+    finally:
+        torch.cuda.empty_cache()
+        # All done
+        Log("Done.")
 
-    # All done
-    Log("Done.")
+    for sequence, error in errors.items():
+        print(f"Sequence: {sequence} - error {error}")
