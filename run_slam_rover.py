@@ -204,22 +204,12 @@ class SLAM:
     def run(self):
         pass
 
-SEQUENCES = [
-    "kwald/drosselweg/flaeche1/2023-08-18",
-    "kwald/drosselweg/flaeche1/2023-09-15",
-    "kwald/drosselweg/flaeche1/2024-01-13",
-    "kwald/drosselweg/flaeche1/2024-04-11",
-    "kwald/drosselweg/flaeche1/2024-05-29_1",
-    "kwald/drosselweg/flaeche1/2024-05-29_2",
-    "kwald/drosselweg/flaeche1/2024-05-29_3",
-    "kwald/drosselweg/flaeche1/2024-05-29_4"
-]
 
 if __name__ == "__main__":
     # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
-    parser.add_argument("--base_data_path", type=Path)
-    parser.add_argument("--base_output_path", type=Path)
+    parser.add_argument("--data_path", type=Path)
+    parser.add_argument("--output_path", type=Path)
     parser.add_argument("--config", type=str)
     parser.add_argument("--eval", action="store_true")
 
@@ -235,8 +225,6 @@ if __name__ == "__main__":
 
     errors = dict()
 
-    sequence = SEQUENCES[int(os.environ.get("SCENE_NUM"))]
-
     print(f"Running ")
 
     try:
@@ -244,8 +232,8 @@ if __name__ == "__main__":
     except RuntimeError:
         pass
 
-    config["Dataset"]["dataset_path"] = os.path.join(args.base_data_path, sequence, "tum", "d435i")
-    config["Results"]["save_dir"] = os.path.join(args.base_output_path, sequence, "d435i")
+    config["Dataset"]["dataset_path"] = data_path
+    config["Results"]["save_dir"] = output_path
 
     if args.eval:
         Log("Running MonoGS in Evaluation Mode")
