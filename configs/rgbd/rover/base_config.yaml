@@ -5,7 +5,7 @@ Results:
   save_trj: True
   save_trj_kf_intv: 250
   use_gui: False
-  eval_rendering: True
+  eval_rendering: False
   use_wandb: False
 
 Dataset:

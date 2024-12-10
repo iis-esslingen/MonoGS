@@ -1,7 +1,7 @@
 inherit_from: "configs/rgbd/rover/base_config.yaml"
 
 Dataset:
-  dataset_path: "/home/doubletower/data/rover/kwald1"
+  dataset_path: "/home/doubletower/data/rover/garden1"
   Calibration:
     fx: 596.1950425915236
     fy: 593.1411835433107
