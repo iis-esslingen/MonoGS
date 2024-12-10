@@ -1,15 +1,15 @@
 #!/bin/bash
 
-trials=("1")
+dates=("2023-08-18" "2023-09-15" "2024-01-13" "2024-04-11" "2024-05-29_1" "2024-05-29_2" "2024-05-29_3" "2024-05-29_4")
 
-for trial in "${trials[@]}"; do
-    echo "  Trial: $trial"
+for date in "${dates[@]}"; do
+    echo "Processing date: $date"
 
-    for scene in 0; do
-        SCENE_NUM=${scene}
-        export SCENE_NUM
-        echo "Running scene number ${SCENE_NUM}"
-        # python3 -u run_slam_stihl.py --config configs/mono/stihl/d435i.yaml --base_data_path /media/mobile-robots/My\ Passport/stihl_datasets --base_output_path output/short_mapping/mono/$trial
-        python3 -u run_slam_stihl.py --config configs/rgbd/stihl/d435i.yaml --base_data_path /media/mobile-robots/My\ Passport/stihl_datasets --base_output_path output/short_mapping/rgbd/$trial
+    trials=("0" "1" "2" "3" "4")
+
+    for trial in "${trials[@]}"; do
+        echo "  Trial: $trial"
+        python3 -u run_slam_rover.py --config configs/mono/rover/d435i.yaml --data_path /workspace/mounted_directory/media/$date/d435i --output_path output/mono/$trial
+        python3 -u run_slam_rover.py --config configs/rgbd/rover/d435i.yaml --data_path /workspace/mounted_directory/media/$date/d435i --output_path output/rgbd/$trial
     done
 done
