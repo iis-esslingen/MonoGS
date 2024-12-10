@@ -232,8 +232,8 @@ if __name__ == "__main__":
     except RuntimeError:
         pass
 
-    config["Dataset"]["dataset_path"] = data_path
-    config["Results"]["save_dir"] = output_path
+    config["Dataset"]["dataset_path"] = args.data_path
+    config["Results"]["save_dir"] = args.output_path
 
     if args.eval:
         Log("Running MonoGS in Evaluation Mode")
